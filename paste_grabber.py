@@ -104,8 +104,12 @@ class PasteGrabber(object):
 			pos, size, data = self.paths_pos[path_real]
 			if self.file_end_check(path_real, pos, size=size, data=data):
 				log.debug(( 'Event (mask: {}) for unchanged'
-					' path: {}, ignoring' ).format(mask_str, path))
+					' path, ignoring: {}' ).format(mask_str, path))
 				return
+			if path_real.getsize() < pos:
+				log.debug( 'Detected truncation'
+					' of a path, rewinding: {}'.format(path) )
+				pos = None
 		else: pos = None
 
 		## Actual processing
