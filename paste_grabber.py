@@ -147,19 +147,20 @@ class PasteGrabber(object):
 			log.warn('Failed to recode line ({!r}): {}'.format(line, err))
 			defer.returnValue(None)
 
-		# Grab the patch
+		## Grab the patch
 		dst_base = '{}.patch'.format(sha1(link).hexdigest())
 		dst_path = self.dst_path.child(dst_base)
 		if dst_path.exists():
 			log.debug( 'Patch already exists'
 				' (file: {}, link: {}), skipping'.format(dst_path, link) )
 			defer.returnValue(None)
-		try: yield downloadPage(link, dst_path.open('wb'), timeout=60)
+		# Not via tmpfile to prevent multiple downloads of the same paste
+		try: yield downloadPage(link, dst_path.open('wb'), timeout=120)
 		except:
 			if dst_path.exists(): dst_path.remove()
 			raise
 
-		# Commit into repo and push
+		## Commit into repo and push
 		yield repo_lock.acquire()
 		try:
 			for cmd, check in [
