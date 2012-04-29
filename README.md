@@ -6,10 +6,11 @@ zebrapig-helpers: misc scripts related to [exherbo linux](http://exherbo.org/) d
 Inotify watcher for IRC logs' path (or glob pattern) for [zebrapig
 patchbot](http://exherbo.org/docs/patchbot.html) "patch queue" ("!pq") requests.
 
-Upon spotting a new request with a paste-link in it, stores it into `dst_path`,
-with sha1 of the link as a basename (technically, "${sha1}.patch").
+Upon spotting a new request with a pastebin-link in it, stores paste contents
+into `dst_path`, with sha1 of the link as a basename (technically,
+"${link_sha1}.patch").
 
-Purpose it to mirror transient and unreliable links to pastebin-like services to
+Purpose is to mirror transient and unreliable links to pastebin-like services to
 something more permanent. Currently that "more permanent" thing is a
 github-mirrored repo,
 [exherbo-patches](https://github.com/mk-fg/exherbo-patches).
