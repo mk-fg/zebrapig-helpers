@@ -53,7 +53,6 @@ class PasteGrabber(object):
 
 		paths = glob(path_mask)
 
-		# TODO: initial check/processing of files
 		for path in it.imap(FilePath, paths):
 			path_real = path.realpath()
 			# Matched regular files are watched as a basename pattern in the dir
@@ -62,15 +61,12 @@ class PasteGrabber(object):
 				if path_dir not in paths_watch:
 					paths_watch[path_dir] = {os.path.basename(optz.path_mask)}
 				else: paths_watch[path_dir].add(os.path.basename(optz.path_mask))
-				paths_pos[path_real] = self.file_end_mark(path_real)
 			# All files in the matched dirs are watched, non-recursively
 			elif path_real.isdir():
 				if path_real not in paths_watch: paths_watch[path_real] = {'*'}
 				else: paths_watch[path_real].add('*')
 				for name in path_real.listdir():
 					path_child = path_real.child(name).realpath()
-					if path_child.isfile():
-						paths_pos[path_child] = self.file_end_mark(path_child)
 			# Specials of any kind are ignored
 			else: log.debug('Skipping non-file/dir path: {}'.format(path_real))
 
@@ -104,7 +100,7 @@ class PasteGrabber(object):
 			return
 
 		## Get last position
-		if path_real in self.paths_pos:
+		if self.paths_pos.get(path_real) is not None:
 			pos, size, data = self.paths_pos[path_real]
 			if self.file_end_check(path_real, pos, size=size, data=data):
 				log.debug(( 'Event (mask: {}) for unchanged'
@@ -120,7 +116,7 @@ class PasteGrabber(object):
 				pos = None
 			while True:
 				buff = src.readline()
-				if not buff:
+				if not buff: # eof
 					self.paths_pos[path_real] = self.file_end_mark(path_real, data=line)
 				line += buff
 				if line.endswith('\n'):
