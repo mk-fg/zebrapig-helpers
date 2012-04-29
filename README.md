@@ -14,6 +14,10 @@ something more permanent. Currently that "more permanent" thing is a
 github-mirrored repo,
 [exherbo-patches](https://github.com/mk-fg/exherbo-patches).
 
+Requirements: [Twisted
+Core](https://pypi.python.org/pypi/Twisted%20Core/12.0.0), [Twisted
+Web](https://pypi.python.org/pypi/Twisted%20Web/12.0.0)
+
 Usage:
 
 	usage: paste_grabber.py [-h] [--debug] path_mask dst_path
