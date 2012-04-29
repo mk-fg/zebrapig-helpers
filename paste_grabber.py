@@ -14,7 +14,7 @@ from twisted.python.filepath import FilePath
 from twisted.python import log
 
 
-class LogTailer(object):
+class PasteGrabber(object):
 
 	@staticmethod
 	def file_end_mark(path, size=200, pos=None, data=None):
@@ -99,8 +99,8 @@ class LogTailer(object):
 		for pat in self.paths_watch[dir_key]:
 			if fnmatch(bytes(path.basename()), pat): break
 		else:
-			log.debug( 'Non-matched path in one of'
-				' the watched dirs: {} (realpath: {})'.format(path, path_real) )
+			# log.debug( 'Non-matched path in one of'
+			# 	' the watched dirs: {} (realpath: {})'.format(path, path_real) )
 			return
 
 		## Get last position
@@ -135,9 +135,9 @@ class LogTailer(object):
 	def handle_line(self, line):
 		try:
 			line = line.decode('utf-8').strip()
-			match = re.search(r'^!pq\s+(?P<link>\S+)(\s*|$)', line)
+			match = re.search(r'(^|\s+)!pq\s+(?P<link>\S+)(\s+::\S+|$)', line)
 			if not match:
-				log.debug('Non-patchbot line, ignoring: {}'.format(line))
+				# log.debug('Non-patchbot line, ignoring: {}'.format(line))
 				defer.returnValue(None)
 			link = match.group('link').encode('ascii')
 			if not re.search('https?://', link, re.IGNORECASE):
@@ -149,8 +149,8 @@ class LogTailer(object):
 
 		# Grab the patch
 		dst_base = '{}.patch'.format(sha1(link).hexdigest())
-		yield downloadPage( link,
-			self.dst_path.child(dst_base).open('wb'), timeout=60 )
+		dst_path = self.dst_path.child(dst_base)
+		yield downloadPage(link, dst_path.open('wb'), timeout=60)
 
 		# Commit into repo and push
 		for cmd, check in [
@@ -166,6 +166,7 @@ class LogTailer(object):
 					'Stdout:\n  {}'.format('\n  '.join(out.splitlines())),
 					'Stderr:\n  {}'.format('\n  '.join(err.splitlines())) ]))
 				break
+		else: log.debug('Successfully pushed paste: {}'.format(link))
 
 
 if __name__ == '__main__':
@@ -191,7 +192,11 @@ if __name__ == '__main__':
 		setattr(log, func, ft.partial( log.msg,
 			logLevel=getattr(logging, lvl.upper()) ))
 
-	tailer = LogTailer(optz.path_mask, optz.dst_path)
+	# Check permissions
+	os.listdir(os.path.dirname(optz.path_mask))
+	os.listdir(optz.dst_path)
+
+	tailer = PasteGrabber(optz.path_mask, optz.dst_path)
 
 	log.debug('Starting event loop')
 	reactor.run()
