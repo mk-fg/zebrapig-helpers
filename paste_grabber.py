@@ -78,8 +78,8 @@ class PasteGrabber(object):
 
 
 	def handle_change(self, stuff, path, mask):
-		# log.debug('Event: {} ({})'.format(
-		# 	path, inotify.humanReadableMask(mask) ))
+		mask_str = inotify.humanReadableMask(mask)
+		log.noise('Event: {} ({})'.format(path, mask_str))
 
 		## Filtering
 		path_real = path.realpath()
@@ -95,8 +95,8 @@ class PasteGrabber(object):
 		for pat in self.paths_watch[dir_key]:
 			if fnmatch(bytes(path.basename()), pat): break
 		else:
-			# log.debug( 'Non-matched path in one of'
-			# 	' the watched dirs: {} (realpath: {})'.format(path, path_real) )
+			log.noise( 'Non-matched path in one of'
+				' the watched dirs: {} (realpath: {})'.format(path, path_real) )
 			return
 
 		## Get last position
@@ -104,7 +104,7 @@ class PasteGrabber(object):
 			pos, size, data = self.paths_pos[path_real]
 			if self.file_end_check(path_real, pos, size=size, data=data):
 				log.debug(( 'Event (mask: {}) for unchanged'
-					' path: {}, ignoring' ).format(inotify.humanReadableMask(mask), path))
+					' path: {}, ignoring' ).format(mask_str, path))
 				return
 		else: pos = None
 
@@ -120,7 +120,7 @@ class PasteGrabber(object):
 					self.paths_pos[path_real] = self.file_end_mark(path_real, data=line)
 				line += buff
 				if line.endswith('\n'):
-					log.debug('New line (source: {}): {!r}'.format(path, line))
+					log.noise('New line (source: {}): {!r}'.format(path, line))
 					reactor.callLater(0, self.handle_line, line)
 					line = self.paths_buff[path_real] = ''
 				else:
@@ -133,7 +133,7 @@ class PasteGrabber(object):
 			line = line.decode('utf-8').strip()
 			match = re.search(r'(^|\s+)!pq\s+(?P<link>\S+)(\s+::\S+|$)', line)
 			if not match:
-				# log.debug('Non-patchbot line, ignoring: {}'.format(line))
+				log.noise('Non-patchbot line, ignoring: {}'.format(line))
 				defer.returnValue(None)
 			link = match.group('link').encode('ascii')
 			if not re.search('https?://', link, re.IGNORECASE):
@@ -186,17 +186,23 @@ if __name__ == '__main__':
 		help='Dir to download all the patches to.')
 	parser.add_argument('--debug',
 		action='store_true', help='Verbose operation mode.')
+	parser.add_argument('--noise',
+		action='store_true', help='Even more verbose mode than --debug.')
 	optz = parser.parse_args()
 
-	logging.basicConfig(level=logging.DEBUG
-		if optz.debug else logging.WARNING)
+	logging.NOISE = logging.DEBUG - 1
+	logging.addLevelName(logging.NOISE, 'NOISE')
+	if optz.noise: lvl = logging.NOISE
+	elif optz.debug: lvl = logging.DEBUG
+	else: lvl = logging.WARNING
+	logging.basicConfig(level=lvl)
 	log.PythonLoggingObserver().start()
 
-	for lvl in 'debug', 'info', ('warning', 'warn'), 'error':
+	for lvl in 'noise', 'debug', 'info', ('warning', 'warn'), 'error':
 		lvl, func = lvl if isinstance(lvl, tuple) else (lvl, lvl)
 		assert not getattr(log, lvl, False)
 		setattr(log, func, ft.partial( log.msg,
-			logLevel=getattr(logging, lvl.upper()) ))
+			logLevel=logging.getLevelName(lvl.upper()) ))
 
 	# Check permissions
 	os.listdir(os.path.dirname(optz.path_mask))

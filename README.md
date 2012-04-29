@@ -20,7 +20,7 @@ Web](https://pypi.python.org/pypi/Twisted%20Web/12.0.0)
 
 Usage:
 
-	usage: paste_grabber.py [-h] [--debug] path_mask dst_path
+	usage: paste_grabber.py [-h] [--debug] [--noise] path_mask dst_path
 
 	Watch IRC logs from a specified path and download all the zebrapig patchbot
 	requests to a given dst_path.
@@ -32,3 +32,4 @@ Usage:
 	optional arguments:
 	  -h, --help  show this help message and exit
 	  --debug     Verbose operation mode.
+	  --noise     Even more verbose mode than --debug.
