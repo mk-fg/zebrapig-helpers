@@ -82,8 +82,8 @@ class PasteGrabber(object):
 
 
 	def handle_change(self, stuff, path, mask):
-		log.debug('Event: {} ({})'.format(
-			path, inotify.humanReadableMask(mask) ))
+		# log.debug('Event: {} ({})'.format(
+		# 	path, inotify.humanReadableMask(mask) ))
 
 		## Filtering
 		path_real = path.realpath()
@@ -132,7 +132,7 @@ class PasteGrabber(object):
 					break
 
 	@defer.inlineCallbacks
-	def handle_line(self, line):
+	def handle_line(self, line, repo_lock=defer.DeferredLock()):
 		try:
 			line = line.decode('utf-8').strip()
 			match = re.search(r'(^|\s+)!pq\s+(?P<link>\S+)(\s+::\S+|$)', line)
@@ -150,23 +150,33 @@ class PasteGrabber(object):
 		# Grab the patch
 		dst_base = '{}.patch'.format(sha1(link).hexdigest())
 		dst_path = self.dst_path.child(dst_base)
-		yield downloadPage(link, dst_path.open('wb'), timeout=60)
+		if dst_path.exists():
+			log.debug( 'Patch already exists'
+				' (file: {}, link: {}), skipping'.format(dst_path, link) )
+			defer.returnValue(None)
+		try: yield downloadPage(link, dst_path.open('wb'), timeout=60)
+		except:
+			if dst_path.exists(): dst_path.remove()
+			raise
 
 		# Commit into repo and push
-		for cmd, check in [
-				(['add', dst_base], True),
-				(['commit', '-m', 'New patch: {}'.format(link)], False),
-				(['push'], True) ]:
-			out, err, code = yield getProcessOutputAndValue(
-				'/usr/bin/git', cmd, path=self.dst_path.path )
-			if check and code:
-				log.error('\n'.join([
-					'Failed to commit/push new patch into repo',
-					'Command: {}'.format(cmd), 'Exit code:  {}'.format(code),
-					'Stdout:\n  {}'.format('\n  '.join(out.splitlines())),
-					'Stderr:\n  {}'.format('\n  '.join(err.splitlines())) ]))
-				break
-		else: log.debug('Successfully pushed paste: {}'.format(link))
+		yield repo_lock.acquire()
+		try:
+			for cmd, check in [
+					(['add', dst_base], True),
+					(['commit', '-m', 'New patch: {}'.format(link)], False),
+					(['push'], True) ]:
+				out, err, code = yield getProcessOutputAndValue(
+					'/usr/bin/git', cmd, path=self.dst_path.path )
+				if check and code:
+					log.error('\n'.join([
+						'Failed to commit/push new patch into repo',
+						'Command: {}'.format(cmd), 'Exit code:  {}'.format(code),
+						'Stdout:\n  {}'.format('\n  '.join(out.splitlines())),
+						'Stderr:\n  {}'.format('\n  '.join(err.splitlines())) ]))
+					break
+			else: log.debug('Successfully pushed paste: {}'.format(link))
+		finally: repo_lock.release()
 
 
 if __name__ == '__main__':
