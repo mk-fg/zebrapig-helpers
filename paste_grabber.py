@@ -134,7 +134,7 @@ class PasteGrabber(object):
 	@defer.inlineCallbacks
 	def handle_line(self, line, repo_lock=defer.DeferredLock()):
 		try:
-			line = line.decode('utf-8').strip()
+			line = line.decode('utf-8', 'ignore').strip()
 			match = re.search(r'(^|\s+)!pq\s+(?P<link>\S+)(\s+::\S+|$)', line)
 			if not match:
 				log.noise('Non-patchbot line, ignoring: {}'.format(line))
