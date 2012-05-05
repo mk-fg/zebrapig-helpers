@@ -137,7 +137,7 @@ class PasteGrabber(object):
 			line = line.decode('utf-8', 'ignore').strip()
 			match = re.search(r'(^|\s+)!pq\s+(?P<link>\S+)(\s+::\S+|$)', line)
 			if not match:
-				log.noise('Non-patchbot line, ignoring: {}'.format(line))
+				log.noise('Non-patchbot line, ignoring: {}'.format(line.encode('utf-8', 'ignore')))
 				defer.returnValue(None)
 			link = match.group('link').encode('ascii')
 			if not re.search('https?://', link, re.IGNORECASE):
