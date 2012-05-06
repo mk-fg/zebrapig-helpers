@@ -59,8 +59,8 @@ class PasteGrabber(object):
 			if path_real.isfile():
 				path_dir = path.parent().realpath()
 				if path_dir not in paths_watch:
-					paths_watch[path_dir] = {os.path.basename(optz.path_mask)}
-				else: paths_watch[path_dir].add(os.path.basename(optz.path_mask))
+					paths_watch[path_dir] = {path.basename()}
+				else: paths_watch[path_dir].add(path.basename())
 			# All files in the matched dirs are watched, non-recursively
 			elif path_real.isdir():
 				if path_real not in paths_watch: paths_watch[path_real] = {'*'}
