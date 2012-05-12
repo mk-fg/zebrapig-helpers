@@ -51,9 +51,18 @@ class PasteGrabber(object):
 		self.notifier = inotify.INotify()
 		self.notifier.startReading()
 
-		paths = glob(path_mask)
+		raise NotImplementedError('''paths_watch calculation code below is
+known to have simple bug, which prohibits processing of any new paths matching
+the specified masks.
 
-		for path in it.imap(FilePath, paths):
+Fixed version can be found in (and copy-pasted from) bordercamp-irc-bot
+project "logtail" relay:
+  https://github.com/mk-fg/bordercamp-irc-bot/blob/master/bordercamp/relays/logtail.py
+
+This error is here because I don't use this script atm and don't have time to
+test the code after copy-pasting right now, mostly as a reminder.''')
+
+		for path in it.imap(FilePath, glob(path_mask)):
 			path_real = path.realpath()
 			# Matched regular files are watched as a basename pattern in the dir
 			if path_real.isfile():
